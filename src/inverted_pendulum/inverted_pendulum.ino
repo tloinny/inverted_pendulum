@@ -75,8 +75,8 @@ void setup()
 	/*
 	 *Swing up
 	 */
-  Last_angle = Angle_encoder;
-  Angle_encoder = convertScaledAngleToDegrees(ams_5600.getScaledAngle());
+ 	Last_angle = Angle_encoder;
+ 	Angle_encoder = convertScaledAngleToDegrees(ams_5600.getScaledAngle());
 	while(WITHIN_SWING_SCOPE)
 	{
 		if(Last_angle > Angle_encoder)
