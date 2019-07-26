@@ -5,8 +5,8 @@
 #include <Wire.h>
 
 #define SWING_UP_RANG 140
-#define WITHIN_PID_SCOPE Angle_encoder > Inverted_pendulum_controller.GetAngleSetPoint() - SWING_UP_RANG / 2 && Angle_encoder < Inverted_pendulum_controller.GetAngleSetPoint() + SWING_UP_RANG / 2
-#define WITHIN_SWING_SCOPE Angle_encoder <= Inverted_pendulum_controller.GetAngleSetPoint() - SWING_UP_RANG / 2 || Angle_encoder >= Inverted_pendulum_controller.GetAngleSetPoint() + SWING_UP_RANG / 2
+#define WITHIN_PID_SCOPE (Angle_encoder > Inverted_pendulum_controller.GetAngleSetPoint() - SWING_UP_RANG / 2 && Angle_encoder < Inverted_pendulum_controller.GetAngleSetPoint() + SWING_UP_RANG / 2)
+#define WITHIN_SWING_SCOPE (Angle_encoder <= Inverted_pendulum_controller.GetAngleSetPoint() - SWING_UP_RANG / 2 || Angle_encoder >= Inverted_pendulum_controller.GetAngleSetPoint() + SWING_UP_RANG / 2)
 
 const int ENA = 7;
 const int IN1 = 8;
@@ -18,7 +18,7 @@ const int ENB = 0;	/* only one motor */
 L298N DCMotor(ENA,IN1,IN2,IN3,IN4,ENB);	/* motor driver */
 
 Encoder Encoder(5, 6);	/* position encoder */
-AS5600 ams_5600;	/* angle encoder */
+AMS_5600 ams_5600;	/* angle encoder */
 inverted_pendulum Inverted_pendulum_controller(0,0,0,0,255,255);	/* inverted pendulum pid controller */
 
 float Last_angle = 0;
@@ -75,11 +75,8 @@ void setup()
 	/*
 	 *Swing up
 	 */
-	do
-	{
-		Last_angle = Angle_encoder;
-		Angle_encoder = convertScaledAngleToDegrees(ams_5600.getScaledAngle());
-	}
+  Last_angle = Angle_encoder;
+  Angle_encoder = convertScaledAngleToDegrees(ams_5600.getScaledAngle());
 	while(WITHIN_SWING_SCOPE)
 	{
 		if(Last_angle > Angle_encoder)
@@ -101,7 +98,7 @@ void loop()
 	Position_encoder = Encoder.read();
 	if(WITHIN_PID_SCOPE)
 	{
-		output = InvertedPendulumUpdate(Angle_encoder, Position_encoder);
+		output = Inverted_pendulum_controller.InvertedPendulumUpdate(Angle_encoder, Position_encoder);
 		if (output > 0)
 		{
 			DCMotor.forward(output,0);
