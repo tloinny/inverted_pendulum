@@ -1,6 +1,6 @@
 #include <easy_inverted_pendulum.h>
 
-inverted_pendulum::inverted_pendulum(float A_Kp, float A_Kd, float P_Kp, float P_Kd, int A_limit, int P_limit)
+inverted_pendulum::inverted_pendulum(float A_Kp, float A_Kd, float P_Kp, float P_Kd, long A_st, long P_st, int A_limit, int P_limit)
 {
 	Angle_loop(A_Kp, A_Kd);
 	Position_loop(P_Kp, P_Kd);
@@ -23,6 +23,13 @@ inverted_pendulum::inverted_pendulum(float A_Kp, float A_Kd, float P_Kp, float P
 	this->AngleOutputLimit = A_limit;
 	this->PositionOutputLimit = P_limit;
 
+	this->AngleLoopSampleTime = A_st;
+	this->PositionLoopSampleTime = P_st;
+
+	AngleCurrentTime = millis();
+	PositionCurrentTime = AngleCurrentTime;
+	AngleLastTime = AngleCurrentTime;
+	PositionLastTime = AngleCurrentTime;
 }
 
 void inverted_pendulum::Angle_loop(float Angle_kp, float Angle_kd)
@@ -40,10 +47,15 @@ void inverted_pendulum::Position_loop(float Position_kp, float Position_kd)
 float inverted_pendulum::AngleLoopUpdate(float angle_feedback)
 {
 	AngleError = angle_feedback - AngleSetPoint;	/* calculate the angle error */
-	AngleDTerm = AngleError - AngleLastError;	/* calculate the differential of angle error */
-	AngleOutput = angle_kp * AngleError + angle_kd * AngleDTerm;	/* calculate output */
-	AngleLastError = AngleError;	/* update AngleLastError */
-	AngleOutput *= -1;
+	AngleCurrentTime = millis();
+	long delta_time = AngleCurrentTime - AngleLastTime;
+	if (delta_time >= AngleLoopSampleTime && delta_time > 0)
+	{
+		AngleLastTime = AngleCurrentTime;
+		AngleDTerm = (AngleError - AngleLastError) / delta_time;	/* calculate the differential of angle error */
+		AngleOutput = -1 * (angle_kp * AngleError + angle_kd * AngleDTerm);	/* calculate output */
+		AngleLastError = AngleError;	/* update AngleLastError */
+	}
 	return AngleOutput;
 }
 
@@ -52,8 +64,15 @@ float inverted_pendulum::PositionLoopUpdate(float position_feedback)
 	PositionLeast = position_feedback - PositionSetPoint;
 	PositionError *= 0.8;
 	PositionError += PositionLeast * 0.2;	/* low pass filter */
-	PositionDTerm = PositionError - PositionLastError;
-	PositionOutput = position_kp * PositionError + position_kd * PositionDTerm;
+	PositionCurrentTime = millis();
+	long delta_time = PositionCurrentTime - PositionLastTime;
+	if (delta_time >= PositionLoopSampleTime && delta_time > 0)
+	{
+		PositionLastTime = PositionCurrentTime;
+		PositionDTerm = (PositionError - PositionLastError) / delta_time;
+		PositionOutput = position_kp * PositionError + position_kd * PositionDTerm;
+		PositionLastError = PositionError;
+	}
 	return PositionOutput;
 }
 
@@ -61,6 +80,16 @@ float inverted_pendulum::InvertedPendulumUpdate(float angle_encoder, float posit
 {
 	AngleLoopUpdate(angle_encoder);
 	PositionLoopUpdate(position_encoder);
+	/* range limit */
+
+	if (AngleOutput > 0)
+	{
+		AngleOutput += 255 * 0.05;
+	}else if (AngleOutput < 0)
+	{
+		AngleOutput -= 255 * 0.05;
+	}
+
 	if (AngleOutput > AngleOutputLimit)
 	{
 		AngleOutput = AngleOutputLimit;
@@ -76,7 +105,17 @@ float inverted_pendulum::InvertedPendulumUpdate(float angle_encoder, float posit
 	{
 		PositionOutput = -1 * PositionOutputLimit;
 	}
+
 	InvertedPendulumOutput = AngleOutput + PositionOutput;
+
+	if (InvertedPendulumOutput > 255)
+	{
+		InvertedPendulumOutput = 255;
+	}else if (InvertedPendulumOutput < -255)
+	{
+		InvertedPendulumOutput = -255;
+	}
+
 	return InvertedPendulumOutput;
 }
 
