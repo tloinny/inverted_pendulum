@@ -8,7 +8,7 @@
 #define SWING_UP_RANG 120
 #define WITHIN_PID_SCOPE (Angle_encoder > Inverted_pendulum_controller.GetAngleSetPoint() - SWING_UP_RANG / 2 && Angle_encoder < Inverted_pendulum_controller.GetAngleSetPoint() + SWING_UP_RANG / 2)
 #define WITHIN_SWING_SCOPE (Angle_encoder <= Inverted_pendulum_controller.GetAngleSetPoint() - SWING_UP_RANG / 2 || Angle_encoder >= Inverted_pendulum_controller.GetAngleSetPoint() + SWING_UP_RANG / 2)
-#define offset 0
+#define offset 10
 
 const int EN = 4;
 const int BRK = 5;
@@ -16,10 +16,10 @@ const int DIR = 6;
 const int PWM = 9;
 
 #define A_kp 77.5 * 0.6
-#define A_kd 8437.5 * 0.6
+#define A_kd 8500 * 0.6
 
-#define P_kp 1.28
-#define P_kd 3000*0.6
+#define P_kp 1.3
+#define P_kd 2200*0.6
 
 const long A_sample_time = 0;
 const long P_sample_time = 0;
@@ -113,16 +113,16 @@ void setup()
 void loop()
 {
 	/* You can uncomment this part and use serialplot to see the angle feebback curve */
-	/*
+	
 	Serial.print(Inverted_pendulum_controller.GetAngleSetPoint());
 	Serial.print(",");
 	Serial.println(Angle_encoder);
-	*/
+	
 
 	Angle_encoder = convertScaledAngleToDegrees(ams_5600.getScaledAngle());
 	ultrasonic.MeasureInCentimeters();
 	Position_encoder = round(ultrasonic.RangeInCentimeters*10);
-	if (abs(Position_encoder - Inverted_pendulum_controller.GetPositionSetPoint()) <= 1)
+	if (abs(Position_encoder - Inverted_pendulum_controller.GetPositionSetPoint()) <= 0)
 	{
 		Position_encoder = Inverted_pendulum_controller.GetPositionSetPoint();
 	}
